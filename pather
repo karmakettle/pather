@@ -1,0 +1,71 @@
+#!/usr/bin/env node
+// Pather coding challenge
+
+var fs = require('fs');
+var q = require('q');
+
+var horizontalReplace = function(grid, row, start, end) {
+  var currentRow = grid[row];
+  var newRow = currentRow.slice(0, start);
+  var asterisks = "";
+
+  for ( var i = start; i < end; i++ ) {
+    asterisks += "*";
+  }
+  newRow += asterisks + currentRow.slice(end);
+  grid[row] = newRow;
+};
+
+var verticalReplace = function(grid, col, start, end) {
+  for ( var i = start; i < end; i++ ) {
+    horizontalReplace(grid, i, col, col + 1);
+  }
+};
+
+var pathFinder = function(input) {
+  var grid = input.split("\n");
+  // coords of hash pairs will be stored as an array: [x, y]
+  var first, second;
+
+  for ( var i = 0; i < grid.length; i++ ) {
+    for ( var j = 0; j < grid[i].length; j++ ) {
+      var current = grid[i][j];
+      if ( current === "#" && !first ) {
+        first = [i, j];
+      } else if ( current === "#" ) {
+        second = [i, j];
+
+        // need + 1 for start to make sure hash isn't included
+        var verticalStart = Math.min(first[0], second[0]) + 1;
+        // need + 1 for vertical end to make sure that corner is included
+        var verticalEnd = Math.max(first[0], second[0]) + 1;
+        verticalReplace(grid, first[1], verticalStart, verticalEnd);
+
+        var horizontalStart = Math.min(first[1], second[1]) + 1;
+        var horizontalEnd = Math.max(first[1], second[1]);
+        horizontalReplace(grid, second[0], horizontalStart, horizontalEnd);
+
+        first = second;
+      }
+    }
+  }
+
+  return grid.join("\n");
+};
+
+var readFile = q.nfbind(fs.readFile);
+
+var inputFile = process.argv[2];
+var outputFile = process.argv[3];
+
+readFile(inputFile, 'utf-8')
+  .then(function(data) {
+    return pathFinder(data);
+  })
+  .then(function(result) {
+    fs.writeFile(outputFile, result);
+  })
+  .catch(function(err) {
+    console.log(err);
+  });
+
